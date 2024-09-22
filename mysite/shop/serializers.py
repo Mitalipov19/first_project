@@ -6,12 +6,12 @@ from django.contrib.auth.models import User
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ('username', 'email', 'password')
+        model = UserProfile
+        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'age', 'phone_number', 'status']
         extra_kwargs = {'password': {'write_only':True}}
 
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
+        user = UserProfile.objects.create_user(**validated_data)
         return user
 
 
@@ -71,9 +71,11 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class ProductSerializerList(serializers.ModelSerializer):
+    owner = UserProfileSimpleSerializer()
     class Meta:
         model = Product
-        fields = ['id', 'product_name', 'category', 'price', 'date']
+        fields = ['id', 'product_name', 'category', 'price', 'date','owner']
+
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer()
     ratings = RatingSerializer(many=True, read_only=True)
@@ -81,13 +83,34 @@ class ProductSerializer(serializers.ModelSerializer):
     product = ProductPhotosSerializer(many=True, read_only=True)
     date = serializers.DateField(format='%d-%m-%Y')
     average_rating = serializers.SerializerMethodField()
+    owner = UserProfileSerializer()
 
 
     class Meta:
         model = Product
         fields = ['id', 'product_name', 'category', 'product', 'description',
                   'price', 'product_video', 'active', 'average_rating',
-                  'ratings', 'reviews', 'date']
+                  'ratings', 'reviews', 'date', 'owner']
 
     def get_average_rating(self, obj):
         return obj.get_average_rating()
+
+class CartItemSerializers(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True, source='product')
+
+    class Meta:
+        models = CarItem
+        fields = ['id', 'product', 'product_id', 'quantity', 'get_total_price']
+
+class CartSerializers(serializers.ModelSerializer):
+    items = CartItemSerializers(many=True, read_only=True)
+    total_price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Cart
+        fields = ['id', 'user', 'items', 'total_price']
+
+
+    def get_total_price(self, obj):
+        return obj.get_total_price()

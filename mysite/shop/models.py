@@ -1,15 +1,15 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 
-from django.db import models
 
 
-class UserProfile(models.Model):
-    first_name = models.CharField(max_length=332)
-    last_name = models.CharField(max_length=32)
-    age = models.PositiveSmallIntegerField(default=0)
-    date_registered = models.DateField(auto_now=True)
-    email = models.EmailField()
-    phone_number = models.IntegerField()
+class UserProfile(AbstractUser):
+    first_name = models.CharField(max_length=32, null=True, blank=True)
+    last_name = models.CharField(max_length=32, null=True, blank=True)
+    age = models.PositiveSmallIntegerField(default=0, null=True, blank=True)
+    date_registered = models.DateField(auto_now=True, null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+    phone_number = models.IntegerField(null=True, blank=True)
     STATUS_CHOICES = (
         ('gold', 'gold'),
         ('silver', 'silver'),
@@ -17,7 +17,7 @@ class UserProfile(models.Model):
         ('simple', 'simple'),
     )
 
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='simple')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='simple', null=True, blank=True)
 
     def __str__(self):
         return f'{self.first_name} - {self.last_name}'
@@ -37,7 +37,7 @@ class Product(models.Model):
     date = models.DateField(auto_now=True)
     active = models.BooleanField(default=True)
     product_video = models.FileField(upload_to='product_videos/', verbose_name='Видео', null=True, blank=True)
-
+    owner = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.product_name
@@ -74,3 +74,22 @@ class Review(models.Model):
     def __str__(self):
         return f'{self.author} - {self.product}'
 
+
+class Cart(models.Model):
+    user = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name='cart')
+    created_date = models.DateTimeField(auto_now_add=True)
+
+    def str(self):
+        return f'{self.user}'
+
+    def get_total_price(self):
+        return sum(item.get_total_price() for item in self.items.all())
+
+
+class CarItem(models.Model):
+    cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveSmallIntegerField(default=1)
+
+    def get_total_price(self):
+        return self.product.price * self.quantity

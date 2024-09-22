@@ -29,5 +29,11 @@ urlpatterns = [
 
     path('photos/', ProductPhotosViewSet.as_view({'get': 'list', 'post': 'create'}), name='product_list'),
     path('photos/<int:pk>/', ProductPhotosViewSet.as_view({'get': 'retrieve', 'put': 'update',
-                                              'delete': 'destroy'}), name='product_detail')
+                                              'delete': 'destroy'}), name='product_detail'),
+
+    path('cart/', CartViewSet.as_view({'get': 'retrieve'}), name='cart_detail'),
+
+    path('cart_items/', CartItemVewSet.as_view({'get': 'list', 'post': 'create'}), name='product_list'),
+    path('cart_items/<int:pk>/', CartItemVewSet.as_view({'get': 'retrieve', 'put': 'update',
+                                                           'delete': 'destroy'}), name='product_detail')
 ]

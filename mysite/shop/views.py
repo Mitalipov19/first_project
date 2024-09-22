@@ -10,6 +10,7 @@ from django.urls import reverse
 from .models import *
 from .serializers import *
 from .filters import *
+from .permissions import CheckOwner
 
 
 class RegisterView(generics.CreateAPIView):
@@ -75,13 +76,15 @@ class ProductListViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_class = ProductFilter
     search_fields = ['product_name']
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [CheckOwner]
 
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [CheckOwner]
 
 
 class ProductPhotosViewSet(viewsets.ModelViewSet):
@@ -98,3 +101,26 @@ class RatingViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+
+
+class CartViewSet(viewsets.ModelViewSet):
+    serializer_class = CartSerializers
+
+    def get_queryset(self):
+        return Cart.objects.filter(user=self.request.user)
+
+    def retrieve(self, request, *args, **kwargs):
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        serializer = self.get_serializer(cart)
+        return Response(serializer.data)
+
+
+class CartItemVewSet(viewsets.ModelViewSet):
+    serializer_class = CartItemSerializers
+
+    def get_queryset(self):
+        return CarItem.objects.filter(cart__user=self.request.user)
+
+    def perform_create(self, serializer):
+        cart, created = Cart.objects.filter(cart__user=self.request.user)
+        serializer.save(cart=cart)
