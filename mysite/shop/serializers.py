@@ -1,5 +1,7 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
+from rest_framework_simplejwt.tokens import RefreshToken
+
 from .models import *
 from django.contrib.auth.models import User
 
@@ -14,6 +16,17 @@ class UserSerializer(serializers.ModelSerializer):
         user = UserProfile.objects.create_user(**validated_data)
         return user
 
+    def to_representation(self, instance):
+        refresh = RefreshToken.for_user(instance)
+        return {
+            'user': {
+                'username': instance.username,
+                'email': instance.email,
+            },
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        }
+
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -24,7 +37,6 @@ class LoginSerializer(serializers.Serializer):
         if user and user.is_active:
             return user
         raise serializers.ValidationError('Неверные учетные данные')
-
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -100,7 +112,7 @@ class CartItemSerializers(serializers.ModelSerializer):
     product_id = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True, source='product')
 
     class Meta:
-        models = CarItem
+        model = CarItem
         fields = ['id', 'product', 'product_id', 'quantity', 'get_total_price']
 
 class CartSerializers(serializers.ModelSerializer):
