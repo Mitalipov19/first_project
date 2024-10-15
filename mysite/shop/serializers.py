@@ -39,6 +39,10 @@ class LoginSerializer(serializers.Serializer):
         raise serializers.ValidationError('Неверные учетные данные')
 
 
+class LogoutSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
@@ -71,7 +75,6 @@ class RatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
         fields = ['user', 'stars']
-
 
 
 class ReviewSerializer(serializers.ModelSerializer):

@@ -48,9 +48,13 @@ class CustomLoginView(TokenObtainPairView):
 
 
 class LogoutView(generics.GenericAPIView):
+    serializer_class = LogoutSerializer
+
     def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         try:
-            refresh_token = request.data['refresh']
+            refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
             return Response(status=status.HTTP_205_RESET_CONTENT)
